@@ -14,7 +14,7 @@ async def test_update_exists():
             response = await backend.put(
                 "/api/1/progress_bars/?name=test",
                 headers={"Authorization": f"bearer {user.token}"},
-                json={"sampling_max_count": "75"},
+                json={"sampling_max_count": 75},
             )
             assert response.ok, response
 
@@ -26,6 +26,6 @@ async def test_update_nonexistant():
             response = await backend.put(
                 "/api/1/progress_bars/?name=test",
                 headers={"Authorization": f"bearer {user.token}"},
-                json={"sampling_max_count": "75"},
+                json={"sampling_max_count": 75},
             )
             assert response.status == 404, response
