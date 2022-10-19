@@ -7,18 +7,29 @@ import importlib
 import inspect
 import updater
 import traceback
+import argparse
 import time
 
 REPOS_UNDER_TEST = ["backend", "websocket", "jobs"]
 
 
-async def main():
-    multiprocessing.Process(target=updater.listen_forever_sync, daemon=True).start()
+def cli_main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--run-once", action="store_true")
+    args = parser.parse_args()
+    asyncio.run(main(args.run_once))
+
+
+async def main(run_once: bool):
+    if not run_once:
+        multiprocessing.Process(target=updater.listen_forever_sync, daemon=True).start()
     async with Itgs() as itgs:
         redis = await itgs.redis()
         pubsub = redis.pubsub()
         while True:
             await run_tests()
+            if run_once:
+                break
             await pubsub.subscribe(*[f"updates:{repo}" for repo in REPOS_UNDER_TEST])
             while (
                 await pubsub.get_message(ignore_subscribe_messages=True, timeout=5)
@@ -72,4 +83,4 @@ async def _run_tests():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    cli_main()
