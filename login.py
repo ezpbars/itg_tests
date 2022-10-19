@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from contextlib import asynccontextmanager
-from typing import Iterator
+from typing import AsyncIterator
 from itgs import Itgs
 import secrets
 import time
@@ -8,12 +8,16 @@ import time
 
 @dataclass
 class TestUser:
+    """A user created for testing purposes"""
+
     sub: str
+    """the sub of the genrated user, acts as it's universal id"""
     token: str
+    """the token of the generated user, used for authentication"""
 
 
 @asynccontextmanager
-async def create_and_login_user(itgs: Itgs) -> Iterator[TestUser]:
+async def create_and_login_user(itgs: Itgs) -> AsyncIterator[TestUser]:
     """creates a new user with a random sub and returns the required information to authenticate as them
     the user is deleted when the context manager exits
 
