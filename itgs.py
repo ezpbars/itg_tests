@@ -2,11 +2,14 @@
 the integration is only loaded upon request.
 """
 from typing import Callable, Coroutine, List, Optional
+import aiohttp
 import rqdb
 import rqdb.async_connection
 import redis.asyncio
 import os
 import slack
+import websockets.client
+import websockets.legacy.client
 import jobs
 
 
@@ -33,6 +36,12 @@ class Itgs:
 
         self._jobs: Optional[jobs.Jobs] = None
         """the jobs connection if it had been opened"""
+
+        self._backend: Optional[aiohttp.ClientSession] = None
+        """the backend connection if it had been opened; the base_url is for the backend"""
+
+        self._frontend: Optional[aiohttp.ClientSession] = None
+        """the frontend connection if it had been opened; the base_url is for the frontend"""
 
         self._closures: List[Callable[["Itgs"], Coroutine]] = []
         """functions to run on __aexit__ to cleanup opened resources"""
@@ -121,3 +130,48 @@ class Itgs:
 
         self._closures.append(cleanup)
         return self._jobs
+
+    async def backend(self) -> aiohttp.ClientSession:
+        """gets or creates the backend connection"""
+        if self._backend is not None:
+            return self._backend
+        self._backend = aiohttp.ClientSession(
+            base_url=os.environ.get("ROOT_BACKEND_URL")
+        )
+        await self._backend.__aenter__()
+
+        async def cleanup(me: "Itgs") -> None:
+            await me._backend.__aexit__(None, None, None)
+            me._backend = None
+
+        self._closures.append(cleanup)
+        return self._backend
+
+    async def frontend(self) -> aiohttp.ClientSession:
+        """gets or creates the frontend connection"""
+        if self._frontend is not None:
+            return self._frontend
+        self._frontend = aiohttp.ClientSession(
+            base_url=os.environ.get("ROOT_FRONTEND_URL")
+        )
+        await self._frontend.__aenter__()
+
+        async def cleanup(me: "Itgs") -> None:
+            await me._frontend.__aexit__(None, None, None)
+            me._frontend = None
+
+        self._closures.append(cleanup)
+        return self._frontend
+
+    async def websocket(self, path: str) -> websockets.legacy.client.Connect:
+        """opens a new websocket connection to the given path in the websockets server
+
+        Example:
+
+        ```py
+        async with Itgs() as itgs:
+            async with itgs.websocket("/api/2/test/ws") as ws:
+                await ws.send("hello")
+                print(await ws.recv())
+        ```"""
+        return websockets.client.connect(os.environ.get("ROOT_WEBSOCKET_URL") + path)
