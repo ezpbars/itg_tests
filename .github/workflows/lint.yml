@@ -11,7 +11,7 @@ jobs:
         name: lint
         steps:
             - name: git-checkout
-              uses: actions/checkout@v2
+              uses: actions/checkout@v3
 
             - name: install all dependencies
               run: pip install -r requirements.txt
