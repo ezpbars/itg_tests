@@ -163,7 +163,7 @@ class Itgs:
         self._closures.append(cleanup)
         return self._frontend
 
-    async def websocket(self, path: str) -> websockets.legacy.client.Connect:
+    def websocket(self, path: str) -> websockets.legacy.client.Connect:
         """opens a new websocket connection to the given path in the websockets server
 
         Example:
