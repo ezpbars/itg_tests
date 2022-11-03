@@ -70,6 +70,32 @@ async def create_and_login_user(itgs: Itgs) -> AsyncIterator[TestUser]:
                 """,
                 (uid, new_token, name, now, now + 3600, sub),
             ),
+            (
+                """
+                INSERT INTO user_pricing_plans (
+                    uid,
+                    user_id,
+                    pricing_plan_id
+                )
+                SELECT
+                    ?,
+                    users.id,
+                    pricing_plans.id
+                FROM users
+                JOIN pricing_plans ON pricing_plans.slug = ?
+                WHERE
+                    users.sub = ?
+                    AND NOT EXISTS (
+                        SELECT 1 FROM user_pricing_plans
+                        WHERE user_pricing_plans.user_id = users.id
+                    )
+                """,
+                (
+                    "ep_upp_" + secrets.token_urlsafe(16),
+                    "public",
+                    sub,
+                ),
+            ),
         )
     )
     try:
